@@ -80,8 +80,12 @@
 
   .empty { text-align: center; padding: 24px 10px; color: #5F6B60; font-size: 13px; }
 
-  .player-form-grid { display: grid; grid-template-columns: 1.4fr .9fr repeat(6, .7fr) auto; gap: 8px; align-items: end; }
-  @media (max-width: 900px) { .player-form-grid { grid-template-columns: 1fr 1fr; } }
+  .player-form-grid { display: grid; grid-template-columns: 1.6fr 0.8fr repeat(3, 0.7fr); gap: 8px; align-items: end; }
+  .player-form-grid2 { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 8px; align-items: end; margin-top: 8px; }
+  @media (max-width: 700px) {
+    .player-form-grid { grid-template-columns: 1fr 1fr; }
+    .player-form-grid2 { grid-template-columns: 1fr 1fr; }
+  }
 
   .chip { border: 1px solid #263026; background: #101712; color: #5F6B60; border-radius: 7px; padding: 6px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; }
   .chip.selected { border-color: #C6FF4D; background: #1A2417; color: #EDF2E8; }
@@ -494,13 +498,17 @@ function renderStats() {
         <label class="field">Posição
           <select id="f-posicao">${POSITIONS.map((p) => `<option value="${p}" ${d.posicao === p ? "selected" : ""}>${p}</option>`).join("")}</select>
         </label>
-        ${numFields.map(([key, label]) => `
-          <label class="field">${label}
-            <input type="number" min="0" id="f-${key}" value="${d[key]}">
-          </label>`).join("")}
-        <div style="display:flex;gap:6px">
-          <button class="btn-primary" id="f-save">${state.editingId ? "Salvar" : "Adicionar"}</button>
-          ${state.editingId ? `<button class="btn-ghost" id="f-cancel">Cancelar</button>` : ""}
+        <label class="field">Jogos<input type="number" min="0" id="f-jogos" value="${d.jogos}"></label>
+        <label class="field">Gols<input type="number" min="0" id="f-gols" value="${d.gols}"></label>
+        <label class="field">Assist.<input type="number" min="0" id="f-assistencias" value="${d.assistencias}"></label>
+      </div>
+      <div class="player-form-grid2">
+        <label class="field">MVPs<input type="number" min="0" id="f-mvp" value="${d.mvp}"></label>
+        <label class="field">Defesas<input type="number" min="0" id="f-defesas" value="${d.defesas}"></label>
+        <label class="field">Cartões<input type="number" min="0" id="f-cartoes" value="${d.cartoes}"></label>
+        <div style="display:flex;gap:6px;align-items:flex-end">
+          <button class="btn-primary" id="f-save" style="height:36px">${state.editingId ? "Salvar" : "Adicionar"}</button>
+          ${state.editingId ? `<button class="btn-ghost" id="f-cancel" style="height:36px">Cancelar</button>` : ""}
         </div>
       </div>
     </div>
