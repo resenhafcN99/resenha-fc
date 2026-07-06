@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resenha FC — Ferramenta para jogadores de futebol no Roblox</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0B100C;
+    color: #EDF2E8;
+    min-height: 100vh;
+  }
+  button { cursor: pointer; font-family: 'Inter', sans-serif; }
+  input, select { font-family: 'Inter', sans-serif; }
+  input::placeholder { color: #4E5A4F; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #263026; border-radius: 4px; }
+
+  .shell { max-width: 1100px; margin: 0 auto; border: 1px solid #1B241B; border-radius: 14px; overflow: hidden; margin-top: 18px; margin-bottom: 18px; }
+  .header { border-bottom: 1px solid #1B241B; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; padding: 16px 22px 12px; flex-wrap: wrap; gap: 8px; }
+  .logo { font-family: 'Teko', sans-serif; font-size: 32px; font-weight: 700; letter-spacing: .02em; color: #C6FF4D; }
+  .subtitle { font-size: 11px; color: #7E8B81; letter-spacing: .06em; margin-left: 10px; }
+  .scoreline { background: repeating-linear-gradient(90deg, #1B241B 0 14px, transparent 14px 28px); height: 1px; }
+  .tabs { display: flex; gap: 2px; padding: 10px 14px 0; flex-wrap: wrap; }
+  .tab-btn {
+    background: transparent; border: none; border-bottom: 2px solid transparent;
+    color: #7E8B81; font-weight: 600; font-size: 13px; padding: 9px 14px;
+    border-radius: 6px 6px 0 0; display: flex; align-items: center; gap: 6px;
+  }
+  .tab-btn.active { background: #141B16; border-bottom: 2px solid #C6FF4D; color: #EDF2E8; }
+  .content { padding: 20px 22px 28px; }
+
+  .card { background: #10160F; border: 1px solid #1B241B; border-radius: 10px; padding: 14px 16px; }
+  .card.nopad { padding: 0; }
+  .card.sub { background: #101712; }
+
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 760px) {
+    .grid4 { grid-template-columns: repeat(2, 1fr); }
+    .grid2 { grid-template-columns: 1fr; }
+  }
+
+  .statnum { text-align: center; }
+  .statnum .num { font-family: 'Teko', sans-serif; font-size: 30px; line-height: 1; }
+  .statnum .label { font-size: 10px; letter-spacing: .08em; color: #7E8B81; margin-top: 2px; }
+
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9CA89E; }
+  .field input, .field select {
+    background: #101713; border: 1px solid #263026; border-radius: 6px;
+    color: #EDF2E8; padding: 7px 9px; font-size: 13px; outline: none;
+  }
+  .field input:focus, .field select:focus { border-color: #C6FF4D; }
+
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; }
+
+  .btn-primary {
+    background: #C6FF4D; color: #0B100C; border: none; border-radius: 7px;
+    padding: 8px 14px; font-size: 12px; font-weight: 700; white-space: nowrap;
+  }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-ghost {
+    background: #101712; color: #EDF2E8; border: 1px solid #263026; border-radius: 7px;
+    padding: 7px 12px; font-size: 12px; font-weight: 600;
+  }
+  .btn-ghost.active { background: #1A2417; border-color: #C6FF4D; }
+  .btn-icon { background: transparent; border: none; color: #7E8B81; font-size: 13px; padding: 2px 6px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: center; padding: 10px 8px; color: #7E8B81; font-weight: 600; font-size: 11px; letter-spacing: .04em; border-bottom: 1px solid #1B241B; }
+  th.left { text-align: left; }
+  td { padding: 9px 8px; text-align: center; border-bottom: 1px solid #15201580; }
+  td.left { text-align: left; font-weight: 600; }
+
+  .empty { text-align: center; padding: 24px 10px; color: #5F6B60; font-size: 13px; }
+
+  .player-form-grid { display: grid; grid-template-columns: 1.4fr .9fr repeat(6, .7fr) auto; gap: 8px; align-items: end; }
+  @media (max-width: 900px) { .player-form-grid { grid-template-columns: 1fr 1fr; } }
+
+  .chip { border: 1px solid #263026; background: #101712; color: #5F6B60; border-radius: 7px; padding: 6px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; }
+  .chip.selected { border-color: #C6FF4D; background: #1A2417; color: #EDF2E8; }
+
+  .rank-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid #15201580; }
+  .rank-row.top { background: #101712; }
+  .rank-pos { width: 28px; font-family: 'Teko', sans-serif; font-size: 22px; text-align: center; color: #5F6B60; }
+
+  .pitch { position: relative; width: 100%; aspect-ratio: .68; background: linear-gradient(180deg,#16321A,#0F2613); border-radius: 10px; border: 2px solid #2C4A30; overflow: hidden; }
+  .slot { position: absolute; transform: translate(-50%, -50%); text-align: center; cursor: pointer; }
+  .slot-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 2px solid #2C4A30; background: #0B100C; color: #7E8B81; }
+  .slot-circle.filled { color: #0B100C; }
+  .slot-circle.active { border-color: #C6FF4D; }
+  .slot-name { font-size: 10px; margin-top: 3px; color: #EDF2E8; white-space: nowrap; max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
+
+  .progress-track { height: 8px; background: #101712; border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #C6FF4D; }
+
+  .player-pick-row { display: flex; justify-content: space-between; align-items: center; background: #101712; border: 1px solid #263026; border-radius: 6px; padding: 6px 10px; font-size: 12px; width: 100%; color: #EDF2E8; }
+  .player-pick-row.used { background: #141B16; color: #5F6B60; }
+  .player-pick-row:disabled { opacity: .5; cursor: not-allowed; }
+
+  .lineup-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #15201580; }
+
+  .loading { padding: 40px; text-align: center; color: #7E8B81; }
+
+  .account-area { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+  .account-chip { display: flex; align-items: center; gap: 8px; background: #101712; border: 1px solid #263026; border-radius: 999px; padding: 5px 10px 5px 5px; }
+  .account-avatar { width: 22px; height: 22px; border-radius: 50%; background: #C6FF4D; color: #0B100C; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+  .cloud-badge { font-size: 10px; padding: 2px 7px; border-radius: 999px; }
+  .cloud-badge.on { background: #C6FF4D22; color: #C6FF4D; border: 1px solid #C6FF4D55; }
+  .cloud-badge.off { background: #FF8A3D22; color: #FF8A3D; border: 1px solid #FF8A3D55; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal-box { background: #10160F; border: 1px solid #1B241B; border-radius: 12px; padding: 22px; width: 100%; max-width: 360px; }
+  .modal-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .modal-tab { flex: 1; background: #101712; border: 1px solid #263026; color: #7E8B81; border-radius: 7px; padding: 8px; font-size: 12px; font-weight: 600; }
+  .modal-tab.active { background: #1A2417; border-color: #C6FF4D; color: #EDF2E8; }
+  .modal-close { background: transparent; border: none; color: #7E8B81; font-size: 16px; float: right; }
+  .modal-msg { font-size: 12px; padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; }
+  .modal-msg.error { background: #FF7A5C22; color: #FF7A5C; border: 1px solid #FF7A5C55; }
+  .modal-msg.success { background: #C6FF4D22; color: #C6FF4D; border: 1px solid #C6FF4D55; }
+  .config-banner { background: #FF8A3D15; border: 1px solid #FF8A3D44; color: #FF8A3D; font-size: 12px; padding: 10px 16px; line-height: 1.6; }
+  .config-banner code { background: #0B100C; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div id="config-banner-slot"></div>
+  <div class="header">
+    <div class="header-top">
+      <div><span class="logo">RESENHA FC</span><span class="subtitle">ROBLOX FOOTBALL TOOLKIT</span></div>
+      <div class="account-area">
+        <span id="player-count" style="font-size:11px;color:#7E8B81;"></span>
+        <div id="account-slot"></div>
+      </div>
+    </div>
+    <div class="scoreline"></div>
+    <div class="tabs" id="tabs"></div>
+  </div>
+  <div class="content" id="content">
+    <div class="loading">Carregando dados…</div>
+  </div>
+</div>
+
+<div id="modal-root"></div>
+
+<script>
+/* ============================================================
+   RESENHA FC — ferramenta para jogadores de futebol no Roblox
+   Estatísticas / Ranking / Montar times / Escalação / Calculadora de médias
+   ============================================================ */
+
+const STORAGE_KEY = "resenhafc-players-v1";
+const LINEUPS_KEY = "resenhafc-lineups-v1";
+const TEAMS_KEY = "resenhafc-teams-v1";
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+const POSITIONS = ["GOL", "ZAG", "LAT", "VOL", "MEI", "ATA"];
+const POS_COLOR = { GOL: "#FFC34D", ZAG: "#7FB3FF", LAT: "#7FB3FF", VOL: "#9AD66B", MEI: "#9AD66B", ATA: "#FF7A5C" };
+
+const FORMATIONS = {
+  "4-3-3": [
+    { id: "GOL", label: "GOL", x: 50, y: 92 },
+    { id: "ZAG1", label: "ZAG", x: 20, y: 74 }, { id: "ZAG2", label: "ZAG", x: 40, y: 78 },
+    { id: "ZAG3", label: "ZAG", x: 60, y: 78 }, { id: "ZAG4", label: "LAT", x: 80, y: 74 },
+    { id: "VOL1", label: "VOL", x: 32, y: 54 }, { id: "VOL2", label: "VOL", x: 50, y: 58 }, { id: "VOL3", label: "MEI", x: 68, y: 54 },
+    { id: "ATA1", label: "ATA", x: 22, y: 28 }, { id: "ATA2", label: "ATA", x: 50, y: 20 }, { id: "ATA3", label: "ATA", x: 78, y: 28 },
+  ],
+  "4-4-2": [
+    { id: "GOL", label: "GOL", x: 50, y: 92 },
+    { id: "ZAG1", label: "ZAG", x: 20, y: 76 }, { id: "ZAG2", label: "ZAG", x: 40, y: 80 },
+    { id: "ZAG3", label: "ZAG", x: 60, y: 80 }, { id: "ZAG4", label: "LAT", x: 80, y: 76 },
+    { id: "MEI1", label: "MEI", x: 18, y: 50 }, { id: "MEI2", label: "VOL", x: 40, y: 56 },
+    { id: "MEI3", label: "VOL", x: 60, y: 56 }, { id: "MEI4", label: "MEI", x: 82, y: 50 },
+    { id: "ATA1", label: "ATA", x: 38, y: 24 }, { id: "ATA2", label: "ATA", x: 62, y: 24 },
+  ],
+  "3-5-2": [
+    { id: "GOL", label: "GOL", x: 50, y: 92 },
+    { id: "ZAG1", label: "ZAG", x: 28, y: 78 }, { id: "ZAG2", label: "ZAG", x: 50, y: 82 }, { id: "ZAG3", label: "ZAG", x: 72, y: 78 },
+    { id: "MEI1", label: "LAT", x: 10, y: 54 }, { id: "MEI2", label: "VOL", x: 36, y: 58 }, { id: "MEI3", label: "MEI", x: 50, y: 50 },
+    { id: "MEI4", label: "VOL", x: 64, y: 58 }, { id: "MEI5", label: "LAT", x: 90, y: 54 },
+    { id: "ATA1", label: "ATA", x: 38, y: 24 }, { id: "ATA2", label: "ATA", x: 62, y: 24 },
+  ],
+  "2-3-1 (5v5)": [
+    { id: "GOL", label: "GOL", x: 50, y: 90 },
+    { id: "ZAG1", label: "ZAG", x: 30, y: 70 }, { id: "ZAG2", label: "ZAG", x: 70, y: 70 },
+    { id: "MEI1", label: "VOL", x: 22, y: 46 }, { id: "MEI2", label: "MEI", x: 50, y: 40 }, { id: "MEI3", label: "VOL", x: 78, y: 46 },
+    { id: "ATA1", label: "ATA", x: 50, y: 18 },
+  ],
+};
+
+/* ============================================================
+   CONFIGURAÇÃO DA CONTA NA NUVEM (Supabase)
+   ------------------------------------------------------------
+   1. Crie uma conta grátis em https://supabase.com e um novo projeto.
+   2. Em "Project Settings" → "API", copie a "Project URL" e a
+      chave "anon public" e cole abaixo.
+   3. No SQL Editor do Supabase, rode o script que está no arquivo
+      INSTRUCOES.md (criação da tabela + permissões).
+   4. Salve este arquivo e suba pro seu site novamente.
+   Enquanto os campos abaixo não forem preenchidos, o site funciona
+   normalmente no "modo convidado" (salva só neste navegador).
+   ============================================================ */
+const SUPABASE_URL = "https://vliteofrzfjplshwgxon.supabase.co";       // ex: "https://xxxxxxxx.supabase.co"
+const SUPABASE_ANON_KEY = "sb_publishable_JsujBEd0J_ykLEwNnrIgHw_FzptaztE";  // ex: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+const cloudEnabled = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+const sb = cloudEnabled ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+let currentUser = null;       // { id, email } | null
+let authMode = "login";       // "login" | "signup"
+let authMsg = null;           // { type: "error"|"success", text }
+let showAuthModal = false;
+let cloudBusy = false;
+
+const RANK_WEIGHTS = { gols: 4, assistencias: 3, jogos: 1, mvp: 5, defesas: 2, cartoes: -2 };
+
+function ratingOf(p) {
+  const j = Math.max(p.jogos, 1);
+  const score = (p.gols / j) * 10 + (p.assistencias / j) * 7 + (p.mvp / j) * 12 + (p.defesas / j) * 4 - (p.cartoes / j) * 6;
+  return Math.max(40, Math.min(99, Math.round(60 + score)));
+}
+function rankScore(p) {
+  return p.gols * RANK_WEIGHTS.gols + p.assistencias * RANK_WEIGHTS.assistencias + p.jogos * RANK_WEIGHTS.jogos +
+    p.mvp * RANK_WEIGHTS.mvp + p.defesas * RANK_WEIGHTS.defesas + p.cartoes * RANK_WEIGHTS.cartoes;
+}
+function emptyPlayer() {
+  return { id: uid(), nome: "", posicao: "ATA", jogos: 0, gols: 0, assistencias: 0, mvp: 0, defesas: 0, cartoes: 0 };
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/* ----------------------- state + persistence ----------------------- */
+
+const state = {
+  players: [],
+  lineups: [],
+  savedTeams: null,
+  tab: "stats",
+  draftPlayer: emptyPlayer(),
+  editingId: null,
+  numTeams: 2,
+  teamsSelected: new Set(),
+  formation: "4-3-3",
+  assign: {},
+  activeSlot: null,
+  lineupName: "",
+};
+
+async function loadAll() {
+  if (currentUser && cloudEnabled) {
+    try {
+      const { data, error } = await sb.from("resenha_data").select("data").eq("user_id", currentUser.id).maybeSingle();
+      if (error) throw error;
+      const blob = data?.data || {};
+      state.players = blob.players || [];
+      state.lineups = blob.lineups || [];
+      state.savedTeams = blob.savedTeams || null;
+    } catch (e) {
+      console.error("cloud load failed", e);
+    }
+  } else {
+    try {
+      const v = localStorage.getItem(STORAGE_KEY);
+      if (v) state.players = JSON.parse(v);
+    } catch (e) {}
+    try {
+      const v = localStorage.getItem(LINEUPS_KEY);
+      if (v) state.lineups = JSON.parse(v);
+    } catch (e) {}
+    try {
+      const v = localStorage.getItem(TEAMS_KEY);
+      if (v) state.savedTeams = JSON.parse(v);
+    } catch (e) {}
+  }
+  state.teamsSelected = new Set(state.players.map((p) => p.id));
+}
+
+let saveDebounce = null;
+async function persistAll() {
+  if (currentUser && cloudEnabled) {
+    cloudBusy = true;
+    if (saveDebounce) clearTimeout(saveDebounce);
+    saveDebounce = setTimeout(async () => {
+      try {
+        await sb.from("resenha_data").upsert({
+          user_id: currentUser.id,
+          data: { players: state.players, lineups: state.lineups, savedTeams: state.savedTeams },
+          updated_at: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.error("cloud save failed", e);
+      } finally {
+        cloudBusy = false;
+      }
+    }, 400);
+  } else {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.players)); } catch (e) {}
+    try { localStorage.setItem(LINEUPS_KEY, JSON.stringify(state.lineups)); } catch (e) {}
+    try { localStorage.setItem(TEAMS_KEY, JSON.stringify(state.savedTeams)); } catch (e) {}
+  }
+}
+async function savePlayers() { await persistAll(); }
+async function saveLineups() { await persistAll(); }
+async function saveTeams() { await persistAll(); }
+
+/* ----------------------- auth ----------------------- */
+
+async function initAuth() {
+  if (!cloudEnabled) return;
+  const { data } = await sb.auth.getSession();
+  if (data?.session?.user) currentUser = { id: data.session.user.id, email: data.session.user.email };
+  sb.auth.onAuthStateChange(async (event, session) => {
+    currentUser = session?.user ? { id: session.user.id, email: session.user.email } : null;
+    await loadAll();
+    render();
+  });
+}
+
+async function handleAuthSubmit(email, password) {
+  authMsg = null;
+  if (!email || !password) { authMsg = { type: "error", text: "Preencha email e senha." }; render(); return; }
+  try {
+    if (authMode === "signup") {
+      const { error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      authMsg = { type: "success", text: "Conta criada! Verifique seu email para confirmar (ou já pode entrar, dependendo da configuração do projeto)." };
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      showAuthModal = false;
+    }
+  } catch (e) {
+    authMsg = { type: "error", text: e.message || "Algo deu errado. Tente novamente." };
+  }
+  render();
+}
+
+async function handleLogout() {
+  if (sb) await sb.auth.signOut();
+  currentUser = null;
+  await loadAll();
+  render();
+}
+
+
+
+/* ----------------------- render: shell ----------------------- */
+
+const TABS = [
+  { id: "stats", label: "Estatísticas", icon: "▦" },
+  { id: "ranking", label: "Ranking", icon: "▲" },
+  { id: "teams", label: "Montar times", icon: "◫" },
+  { id: "lineup", label: "Escalação", icon: "⬡" },
+  { id: "avg", label: "Calculadora de Médias", icon: "⚡" },
+];
+
+function renderTabs() {
+  const el = document.getElementById("tabs");
+  el.innerHTML = TABS.map(
+    (t) => `<button class="tab-btn ${state.tab === t.id ? "active" : ""}" data-tab="${t.id}">
+      <span style="font-size:11px">${t.icon}</span>${t.label}</button>`
+  ).join("");
+  el.querySelectorAll("button").forEach((b) =>
+    b.addEventListener("click", () => { state.tab = b.dataset.tab; render(); })
+  );
+}
+
+function renderAccountArea() {
+  const slot = document.getElementById("account-slot");
+  if (!cloudEnabled) {
+    slot.innerHTML = `<span class="cloud-badge off">modo convidado (sem nuvem configurada)</span>`;
+    return;
+  }
+  if (currentUser) {
+    const initial = currentUser.email[0].toUpperCase();
+    slot.innerHTML = `
+      <div class="account-chip">
+        <div class="account-avatar">${initial}</div>
+        <span>${esc(currentUser.email)}</span>
+        <span class="cloud-badge on">${cloudBusy ? "salvando…" : "salvo na nuvem"}</span>
+        <button class="btn-icon" id="btn-logout" title="Sair">⏻</button>
+      </div>`;
+    document.getElementById("btn-logout")?.addEventListener("click", handleLogout);
+  } else {
+    slot.innerHTML = `
+      <span class="cloud-badge off">não conectado</span>
+      <button class="btn-primary" id="btn-open-auth">Entrar / Criar conta</button>`;
+    document.getElementById("btn-open-auth")?.addEventListener("click", () => { showAuthModal = true; authMsg = null; render(); });
+  }
+
+  const bannerSlot = document.getElementById("config-banner-slot");
+  bannerSlot.innerHTML = cloudEnabled ? "" : `
+    <div class="config-banner">
+      Para ativar contas de usuário e salvar tudo na nuvem, configure o Supabase no topo do arquivo
+      (constantes <code>SUPABASE_URL</code> e <code>SUPABASE_ANON_KEY</code>). Veja o INSTRUCOES.md.
+    </div>`;
+}
+
+function renderAuthModal() {
+  const root = document.getElementById("modal-root");
+  if (!showAuthModal || !cloudEnabled) { root.innerHTML = ""; return; }
+  root.innerHTML = `
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal-box">
+        <button class="modal-close" id="modal-close">✕</button>
+        <div style="font-family:'Teko',sans-serif;font-size:24px;color:#C6FF4D;margin-bottom:4px">Sua conta</div>
+        <div style="font-size:12px;color:#7E8B81;margin-bottom:16px">Entre para salvar seu campeonato na nuvem e acessar de qualquer aparelho.</div>
+        <div class="modal-tabs">
+          <button class="modal-tab ${authMode === "login" ? "active" : ""}" data-mode="login">Entrar</button>
+          <button class="modal-tab ${authMode === "signup" ? "active" : ""}" data-mode="signup">Criar conta</button>
+        </div>
+        ${authMsg ? `<div class="modal-msg ${authMsg.type}">${esc(authMsg.text)}</div>` : ""}
+        <label class="field" style="margin-bottom:10px">Email<input type="email" id="auth-email" placeholder="voce@email.com"></label>
+        <label class="field" style="margin-bottom:16px">Senha<input type="password" id="auth-password" placeholder="mínimo 6 caracteres"></label>
+        <button class="btn-primary" id="auth-submit" style="width:100%">${authMode === "signup" ? "Criar conta" : "Entrar"}</button>
+      </div>
+    </div>`;
+  document.getElementById("modal-close")?.addEventListener("click", () => { showAuthModal = false; render(); });
+  document.getElementById("modal-overlay")?.addEventListener("click", (e) => { if (e.target.id === "modal-overlay") { showAuthModal = false; render(); } });
+  root.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => { authMode = b.dataset.mode; authMsg = null; render(); }));
+  document.getElementById("auth-submit")?.addEventListener("click", () => {
+    const email = document.getElementById("auth-email").value.trim();
+    const password = document.getElementById("auth-password").value;
+    handleAuthSubmit(email, password);
+  });
+}
+
+function render() {
+  document.getElementById("player-count").textContent =
+    `${state.players.length} jogador${state.players.length === 1 ? "" : "es"} no elenco`;
+  renderAccountArea();
+  renderAuthModal();
+  renderTabs();
+  const c = document.getElementById("content");
+  if (state.tab === "stats") c.innerHTML = renderStats();
+  else if (state.tab === "ranking") c.innerHTML = renderRanking();
+  else if (state.tab === "teams") c.innerHTML = renderTeams();
+  else if (state.tab === "lineup") c.innerHTML = renderLineup();
+  else c.innerHTML = renderAvg();
+  attachHandlers();
+}
+
+/* ----------------------- ESTATÍSTICAS ----------------------- */
+
+function renderStats() {
+  const totals = state.players.reduce((a, p) => {
+    a.jogos += p.jogos; a.gols += p.gols; a.assistencias += p.assistencias; a.mvp += p.mvp; return a;
+  }, { jogos: 0, gols: 0, assistencias: 0, mvp: 0 });
+
+  const d = state.draftPlayer;
+  const numFields = [["jogos", "Jogos"], ["gols", "Gols"], ["assistencias", "Assist."], ["mvp", "MVPs"], ["defesas", "Defesas"], ["cartoes", "Cartões"]];
+
+  const rows = state.players.length === 0
+    ? `<tr><td colspan="10" class="empty">Nenhum jogador ainda. Adicione o elenco acima para começar a acompanhar as estatísticas.</td></tr>`
+    : state.players.map((p) => `
+      <tr>
+        <td class="left">${esc(p.nome)}</td>
+        <td><span class="pill" style="background:${POS_COLOR[p.posicao]}22;color:${POS_COLOR[p.posicao]};border:1px solid ${POS_COLOR[p.posicao]}55">${p.posicao}</span></td>
+        <td>${p.jogos}</td>
+        <td style="color:#C6FF4D">${p.gols}</td>
+        <td style="color:#7FB3FF">${p.assistencias}</td>
+        <td>${p.mvp}</td>
+        <td>${p.defesas}</td>
+        <td style="color:${p.cartoes > 0 ? "#FF7A5C" : "#EDF2E8"}">${p.cartoes}</td>
+        <td style="font-family:'Teko',sans-serif;font-size:17px">${ratingOf(p)}</td>
+        <td style="white-space:nowrap">
+          <button class="btn-icon" data-edit="${p.id}" title="Editar">✎</button>
+          <button class="btn-icon" data-remove="${p.id}" title="Remover">✕</button>
+        </td>
+      </tr>`).join("");
+
+  return `
+    <div class="grid4">
+      <div class="card"><div class="statnum"><div class="num">${totals.jogos}</div><div class="label">JOGOS</div></div></div>
+      <div class="card"><div class="statnum"><div class="num" style="color:#C6FF4D">${totals.gols}</div><div class="label">GOLS</div></div></div>
+      <div class="card"><div class="statnum"><div class="num" style="color:#7FB3FF">${totals.assistencias}</div><div class="label">ASSISTÊNCIAS</div></div></div>
+      <div class="card"><div class="statnum"><div class="num" style="color:#FF8A3D">${totals.mvp}</div><div class="label">MVPS</div></div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:22px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px">${state.editingId ? "Editar jogador" : "Adicionar jogador"}</div>
+      <div class="player-form-grid">
+        <label class="field">Nome / @usuário Roblox
+          <input id="f-nome" placeholder="ex: Lucas_BR10" value="${esc(d.nome)}">
+        </label>
+        <label class="field">Posição
+          <select id="f-posicao">${POSITIONS.map((p) => `<option value="${p}" ${d.posicao === p ? "selected" : ""}>${p}</option>`).join("")}</select>
+        </label>
+        ${numFields.map(([key, label]) => `
+          <label class="field">${label}
+            <input type="number" min="0" id="f-${key}" value="${d[key]}">
+          </label>`).join("")}
+        <div style="display:flex;gap:6px">
+          <button class="btn-primary" id="f-save">${state.editingId ? "Salvar" : "Adicionar"}</button>
+          ${state.editingId ? `<button class="btn-ghost" id="f-cancel">Cancelar</button>` : ""}
+        </div>
+      </div>
+    </div>
+
+    <div class="card nopad" style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th class="left">Jogador</th><th>Pos</th><th>J</th><th>G</th><th>A</th><th>MVP</th><th>DEF</th><th>CART</th><th>OVR</th><th></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* ----------------------- RANKING ----------------------- */
+
+function renderRanking() {
+  if (state.players.length === 0) {
+    return `<div class="card"><div class="empty">Adicione jogadores na aba Estatísticas para gerar o ranking.</div></div>`;
+  }
+  const ranked = [...state.players].sort((a, b) => rankScore(b) - rankScore(a));
+  const medal = ["#FFD24D", "#C9CFD6", "#D08A4F"];
+  const rows = ranked.map((p, i) => `
+    <div class="rank-row ${i < 3 ? "top" : ""}">
+      <div class="rank-pos" style="color:${medal[i] || "#5F6B60"}">${i + 1}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${esc(p.nome)}</div>
+        <div style="display:flex;gap:6px;margin-top:4px;align-items:center">
+          <span class="pill" style="background:${POS_COLOR[p.posicao]}22;color:${POS_COLOR[p.posicao]};border:1px solid ${POS_COLOR[p.posicao]}55">${p.posicao}</span>
+          <span style="font-size:11px;color:#7E8B81">OVR ${ratingOf(p)}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:18px">
+        <div class="statnum"><div class="num" style="color:#C6FF4D">${p.gols}</div><div class="label">GOLS</div></div>
+        <div class="statnum"><div class="num" style="color:#7FB3FF">${p.assistencias}</div><div class="label">ASSIST</div></div>
+        <div class="statnum"><div class="num" style="color:#FF8A3D">${rankScore(p)}</div><div class="label">PTS</div></div>
+      </div>
+    </div>`).join("");
+
+  return `
+    <div style="font-size:11px;color:#7E8B81;margin-bottom:14px">
+      Pontuação = gols×4 + assistências×3 + MVP×5 + defesas×2 + jogos×1 − cartões×2
+    </div>
+    <div class="card nopad">${rows}</div>
+  `;
+}
+
+/* ----------------------- MONTAR TIMES ----------------------- */
+
+function renderTeams() {
+  if (state.players.length === 0) {
+    return `<div class="card"><div class="empty">Cadastre jogadores na aba Estatísticas primeiro.</div></div>`;
+  }
+  const chips = state.players.map((p) => `
+    <button class="chip ${state.teamsSelected.has(p.id) ? "selected" : ""}" data-toggle="${p.id}">
+      ${esc(p.nome)} <span style="font-size:10px;opacity:.7">OVR ${ratingOf(p)}</span>
+    </button>`).join("");
+
+  let teamsHtml = "";
+  if (state.savedTeams) {
+    teamsHtml = `<div style="display:grid;grid-template-columns:repeat(${state.savedTeams.teams.length},1fr);gap:14px">` +
+      state.savedTeams.teams.map((team, i) => `
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+            <span style="font-family:'Teko',sans-serif;font-size:20px;color:#C6FF4D">TIME ${String.fromCharCode(65 + i)}</span>
+            <span style="font-size:11px;color:#7E8B81">Força média: ${Math.round(state.savedTeams.totals[i] / Math.max(team.length, 1))}</span>
+          </div>
+          ${team.map((p) => `
+            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #15201580;font-size:12px">
+              <span style="display:flex;align-items:center;gap:6px">
+                <span class="pill" style="background:${POS_COLOR[p.posicao]}22;color:${POS_COLOR[p.posicao]};border:1px solid ${POS_COLOR[p.posicao]}55">${p.posicao}</span> ${esc(p.nome)}
+              </span>
+              <span style="color:#7E8B81">${ratingOf(p)}</span>
+            </div>`).join("")}
+        </div>`).join("") + `</div>`;
+  }
+
+  return `
+    <div class="card" style="margin-bottom:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <div style="font-size:13px;font-weight:600">Selecione quem vai jogar</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label class="field">Nº de times
+            <input type="number" min="2" max="6" id="t-numteams" value="${state.numTeams}" style="width:60px">
+          </label>
+          <button class="btn-primary" id="t-generate" ${state.teamsSelected.size < state.numTeams ? "disabled" : ""}>Gerar times balanceados</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${chips}</div>
+      ${state.teamsSelected.size < state.numTeams ? `<div style="font-size:11px;color:#FF8A3D;margin-top:8px">Selecione pelo menos ${state.numTeams} jogadores para formar ${state.numTeams} times.</div>` : ""}
+    </div>
+    ${teamsHtml}
+  `;
+}
+
+/* ----------------------- ESCALAÇÃO ----------------------- */
+
+function renderLineup() {
+  if (state.players.length === 0) {
+    return `<div class="card"><div class="empty">Cadastre jogadores na aba Estatísticas para montar a escalação.</div></div>`;
+  }
+  const slots = FORMATIONS[state.formation];
+  const usedIds = new Set(Object.values(state.assign));
+
+  const formBtns = Object.keys(FORMATIONS).map((f) => `
+    <button class="btn-ghost ${state.formation === f ? "active" : ""}" data-formation="${f}">${f}</button>`).join("");
+
+  const slotEls = slots.map((slot) => {
+    const pid = state.assign[slot.id];
+    const player = state.players.find((p) => p.id === pid);
+    return `
+      <div class="slot" style="left:${slot.x}%;top:${slot.y}%" data-slot="${slot.id}">
+        <div class="slot-circle ${player ? "filled" : ""} ${state.activeSlot === slot.id ? "active" : ""}"
+             style="${player ? `background:${POS_COLOR[slot.label]}` : ""}">${slot.label}</div>
+        <div class="slot-name">${player ? esc(player.nome) : "vazio"}</div>
+      </div>`;
+  }).join("");
+
+  const pickList = state.players.map((p) => `
+    <button class="player-pick-row ${usedIds.has(p.id) ? "used" : ""}" data-assign="${p.id}" ${state.activeSlot ? "" : "disabled"} style="opacity:${state.activeSlot ? 1 : 0.5}">
+      <span style="display:flex;align-items:center;gap:6px">
+        <span class="pill" style="background:${POS_COLOR[p.posicao]}22;color:${POS_COLOR[p.posicao]};border:1px solid ${POS_COLOR[p.posicao]}55">${p.posicao}</span> ${esc(p.nome)}
+      </span>
+      <span>${ratingOf(p)}</span>
+    </button>`).join("");
+
+  const lineupsList = state.lineups.length === 0
+    ? `<div style="font-size:11px;color:#5F6B60">Nenhuma escalação salva ainda.</div>`
+    : state.lineups.map((l) => `
+        <div class="lineup-row">
+          <span>${esc(l.name)} <span style="color:#7E8B81">· ${l.formation}</span></span>
+          <span>
+            <button class="btn-icon" data-load="${l.id}" title="Carregar">↺</button>
+            <button class="btn-icon" data-removelineup="${l.id}" title="Remover">✕</button>
+          </span>
+        </div>`).join("");
+
+  return `
+    <div class="grid2" style="grid-template-columns:1.3fr .9fr">
+      <div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">${formBtns}</div>
+        <div class="pitch">
+          <svg width="100%" height="100%" viewBox="0 0 100 147" style="position:absolute;inset:0">
+            <rect x="2" y="2" width="96" height="143" fill="none" stroke="#2C4A30" stroke-width="0.6"/>
+            <line x1="2" y1="73.5" x2="98" y2="73.5" stroke="#2C4A30" stroke-width="0.6"/>
+            <circle cx="50" cy="73.5" r="12" fill="none" stroke="#2C4A30" stroke-width="0.6"/>
+            <rect x="22" y="2" width="56" height="20" fill="none" stroke="#2C4A30" stroke-width="0.6"/>
+            <rect x="22" y="125" width="56" height="20" fill="none" stroke="#2C4A30" stroke-width="0.6"/>
+          </svg>
+          ${slotEls}
+        </div>
+        <div style="font-size:11px;color:#7E8B81;margin-top:8px">Clique numa posição no campo e depois escolha o jogador na lista ao lado.</div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:10px">
+            ${state.activeSlot ? `Escolher jogador para ${slots.find((s) => s.id === state.activeSlot)?.label}` : "Selecione uma posição no campo"}
+          </div>
+          <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">${pickList}</div>
+          ${state.activeSlot ? `<button class="btn-ghost" id="l-clear" style="margin-top:10px;width:100%">Limpar posição</button>` : ""}
+        </div>
+        <div class="card">
+          <div style="font-size:13px;font-weight:600;margin-bottom:10px">Salvar escalação</div>
+          <div style="display:flex;gap:6px;margin-bottom:14px">
+            <input id="l-name" placeholder="nome da escalação" value="${esc(state.lineupName)}" style="flex:1;background:#101713;border:1px solid #263026;border-radius:6px;color:#EDF2E8;padding:7px 9px;font-size:13px;outline:none">
+            <button class="btn-primary" id="l-save">Salvar</button>
+          </div>
+          ${lineupsList}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ----------------------- CALCULADORA DE MÉDIAS ----------------------- */
+
+const avgState = {
+  mode: "roster", // "roster" | "manual"
+  selectedPlayerId: null,
+  manual: { jogos: 0, gols: 0, assistencias: 0, mvp: 0, defesas: 0, cartoes: 0 },
+  projJogos: 5,
+};
+
+function computeAverages(d) {
+  const j = Math.max(d.jogos, 0);
+  const safe = (v) => (j > 0 ? v / j : 0);
+  return {
+    jogos: j,
+    golsMedia: safe(d.gols),
+    assistMedia: safe(d.assistencias),
+    participacaoMedia: safe(d.gols + d.assistencias),
+    mvpMedia: safe(d.mvp),
+    defesasMedia: safe(d.defesas),
+    cartoesMedia: safe(d.cartoes),
+    mvpPct: j > 0 ? (d.mvp / j) * 100 : 0,
+  };
+}
+
+function renderAvg() {
+  const isRoster = avgState.mode === "roster";
+  const player = state.players.find((p) => p.id === avgState.selectedPlayerId);
+  const raw = isRoster
+    ? (player ? player : { jogos: 0, gols: 0, assistencias: 0, mvp: 0, defesas: 0, cartoes: 0 })
+    : avgState.manual;
+  const avg = computeAverages(raw);
+
+  const projJ = Math.max(0, avgState.projJogos);
+  const projGols = avg.golsMedia * projJ;
+  const projAssist = avg.assistMedia * projJ;
+  const projPart = avg.participacaoMedia * projJ;
+
+  const rosterOptions = state.players.length === 0
+    ? `<option value="">nenhum jogador cadastrado</option>`
+    : `<option value="">selecione um jogador…</option>` +
+      state.players.map((p) => `<option value="${p.id}" ${avgState.selectedPlayerId === p.id ? "selected" : ""}>${esc(p.nome)}</option>`).join("");
+
+  const manualFields = [
+    ["jogos", "Jogos"], ["gols", "Gols"], ["assistencias", "Assistências"],
+    ["mvp", "MVPs"], ["defesas", "Defesas"], ["cartoes", "Cartões"],
+  ];
+
+  return `
+    <div class="grid2">
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;margin-bottom:14px">Dados para calcular</div>
+
+        <div class="modal-tabs" style="margin-bottom:14px">
+          <button class="modal-tab ${isRoster ? "active" : ""}" data-avgmode="roster">Jogador do elenco</button>
+          <button class="modal-tab ${!isRoster ? "active" : ""}" data-avgmode="manual">Digitar números</button>
+        </div>
+
+        ${isRoster ? `
+          <label class="field" style="margin-bottom:14px">Escolher jogador
+            <select id="avg-player">${rosterOptions}</select>
+          </label>
+          ${!player ? `<div style="font-size:11px;color:#5F6B60">Selecione um jogador para ver as médias calculadas a partir do que está na aba Estatísticas.</div>` : ""}
+        ` : `
+          <div style="display:flex;flex-direction:column;gap:12px">
+            ${manualFields.map(([key, label]) => `
+              <label class="field">${label}
+                <input type="number" min="0" id="avg-m-${key}" value="${avgState.manual[key]}">
+              </label>`).join("")}
+          </div>
+        `}
+
+        <label class="field" style="margin-top:18px">Projetar para quantas próximas partidas?
+          <input type="number" min="0" id="avg-proj" value="${avgState.projJogos}">
+        </label>
+      </div>
+
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;margin-bottom:14px">
+          Médias ${isRoster && player ? `de ${esc(player.nome)}` : isRoster ? "" : "calculadas"}
+          ${avg.jogos > 0 ? `<span style="font-size:11px;color:#7E8B81;font-weight:400">· baseado em ${avg.jogos} jogo${avg.jogos === 1 ? "" : "s"}</span>` : ""}
+        </div>
+
+        ${avg.jogos === 0 ? `
+          <div class="empty" style="padding:30px 10px">Informe ao menos 1 jogo para calcular as médias.</div>
+        ` : `
+          <div class="grid2" style="margin-bottom:18px">
+            <div class="card sub"><div class="statnum"><div class="num" style="color:#C6FF4D">${avg.golsMedia.toFixed(2)}</div><div class="label">Gols / jogo</div></div></div>
+            <div class="card sub"><div class="statnum"><div class="num" style="color:#7FB3FF">${avg.assistMedia.toFixed(2)}</div><div class="label">Assistências / jogo</div></div></div>
+            <div class="card sub"><div class="statnum"><div class="num" style="color:#FF8A3D">${avg.participacaoMedia.toFixed(2)}</div><div class="label">Participações em gol / jogo</div></div></div>
+            <div class="card sub"><div class="statnum"><div class="num">${avg.mvpPct.toFixed(0)}%</div><div class="label">Jogos como MVP</div></div></div>
+            <div class="card sub"><div class="statnum"><div class="num">${avg.defesasMedia.toFixed(2)}</div><div class="label">Defesas / jogo</div></div></div>
+            <div class="card sub"><div class="statnum"><div class="num" style="color:${avg.cartoesMedia > 0 ? "#FF7A5C" : "#EDF2E8"}">${avg.cartoesMedia.toFixed(2)}</div><div class="label">Cartões / jogo</div></div></div>
+          </div>
+
+          <div style="border-top:1px solid #1B241B;padding-top:14px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:10px">Projeção para as próximas ${projJ} partida${projJ === 1 ? "" : "s"}</div>
+            <div style="font-size:11px;color:#7E8B81;line-height:1.7">
+              No ritmo atual, a tendência é fechar com cerca de
+              <strong style="color:#C6FF4D">${projGols.toFixed(1)} gols</strong>,
+              <strong style="color:#7FB3FF">${projAssist.toFixed(1)} assistências</strong> e
+              <strong style="color:#FF8A3D">${projPart.toFixed(1)} participações em gol</strong>
+              ao final desse período.
+            </div>
+          </div>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+/* ----------------------- event wiring ----------------------- */
+
+function attachHandlers() {
+  if (state.tab === "stats") {
+    const get = (id) => document.getElementById(id);
+    const d = state.draftPlayer;
+    get("f-nome")?.addEventListener("input", (e) => (d.nome = e.target.value));
+    get("f-posicao")?.addEventListener("change", (e) => (d.posicao = e.target.value));
+    ["jogos", "gols", "assistencias", "mvp", "defesas", "cartoes"].forEach((k) => {
+      get(`f-${k}`)?.addEventListener("input", (e) => (d[k] = Math.max(0, Number(e.target.value) || 0)));
+    });
+    get("f-save")?.addEventListener("click", async () => {
+      if (!d.nome.trim()) return;
+      if (state.editingId) {
+        state.players = state.players.map((p) => (p.id === state.editingId ? { ...d } : p));
+      } else {
+        state.players.push({ ...d, id: uid() });
+      }
+      state.draftPlayer = emptyPlayer();
+      state.editingId = null;
+      await savePlayers();
+      render();
+    });
+    get("f-cancel")?.addEventListener("click", () => {
+      state.draftPlayer = emptyPlayer();
+      state.editingId = null;
+      render();
+    });
+    document.querySelectorAll("[data-edit]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const p = state.players.find((p) => p.id === b.dataset.edit);
+        state.draftPlayer = { ...p };
+        state.editingId = p.id;
+        render();
+      })
+    );
+    document.querySelectorAll("[data-remove]").forEach((b) =>
+      b.addEventListener("click", async () => {
+        state.players = state.players.filter((p) => p.id !== b.dataset.remove);
+        if (state.editingId === b.dataset.remove) { state.draftPlayer = emptyPlayer(); state.editingId = null; }
+        await savePlayers();
+        render();
+      })
+    );
+  }
+
+  if (state.tab === "teams") {
+    document.getElementById("t-numteams")?.addEventListener("input", (e) => {
+      state.numTeams = Math.min(6, Math.max(2, Number(e.target.value) || 2));
+      render();
+    });
+    document.querySelectorAll("[data-toggle]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const id = b.dataset.toggle;
+        state.teamsSelected.has(id) ? state.teamsSelected.delete(id) : state.teamsSelected.add(id);
+        render();
+      })
+    );
+    document.getElementById("t-generate")?.addEventListener("click", async () => {
+      const pool = state.players.filter((p) => state.teamsSelected.has(p.id));
+      const sorted = [...pool].sort((a, b) => ratingOf(b) - ratingOf(a));
+      const n = state.numTeams;
+      const teams = Array.from({ length: n }, () => []);
+      const totals = Array(n).fill(0);
+      sorted.forEach((p) => {
+        let idx = 0;
+        for (let i = 1; i < n; i++) if (totals[i] < totals[idx]) idx = i;
+        teams[idx].push(p);
+        totals[idx] += ratingOf(p);
+      });
+      state.savedTeams = { teams, totals, generatedAt: Date.now() };
+      await saveTeams();
+      render();
+    });
+  }
+
+  if (state.tab === "lineup") {
+    document.querySelectorAll("[data-formation]").forEach((b) =>
+      b.addEventListener("click", () => {
+        state.formation = b.dataset.formation;
+        state.assign = {};
+        state.activeSlot = null;
+        render();
+      })
+    );
+    document.querySelectorAll("[data-slot]").forEach((b) =>
+      b.addEventListener("click", () => {
+        state.activeSlot = b.dataset.slot;
+        render();
+      })
+    );
+    document.querySelectorAll("[data-assign]").forEach((b) =>
+      b.addEventListener("click", () => {
+        if (!state.activeSlot) return;
+        state.assign[state.activeSlot] = b.dataset.assign;
+        state.activeSlot = null;
+        render();
+      })
+    );
+    document.getElementById("l-clear")?.addEventListener("click", () => {
+      delete state.assign[state.activeSlot];
+      render();
+    });
+    document.getElementById("l-name")?.addEventListener("input", (e) => (state.lineupName = e.target.value));
+    document.getElementById("l-save")?.addEventListener("click", async () => {
+      if (!state.lineupName.trim()) return;
+      state.lineups.push({ id: uid(), name: state.lineupName, formation: state.formation, assign: { ...state.assign }, savedAt: Date.now() });
+      state.lineupName = "";
+      await saveLineups();
+      render();
+    });
+    document.querySelectorAll("[data-load]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const l = state.lineups.find((l) => l.id === b.dataset.load);
+        state.formation = l.formation;
+        state.assign = { ...l.assign };
+        render();
+      })
+    );
+    document.querySelectorAll("[data-removelineup]").forEach((b) =>
+      b.addEventListener("click", async () => {
+        state.lineups = state.lineups.filter((l) => l.id !== b.dataset.removelineup);
+        await saveLineups();
+        render();
+      })
+    );
+  }
+
+  if (state.tab === "avg") {
+    document.querySelectorAll("[data-avgmode]").forEach((b) =>
+      b.addEventListener("click", () => {
+        avgState.mode = b.dataset.avgmode;
+        render();
+      })
+    );
+    document.getElementById("avg-player")?.addEventListener("change", (e) => {
+      avgState.selectedPlayerId = e.target.value || null;
+      render();
+    });
+    const manualFields = ["jogos", "gols", "assistencias", "mvp", "defesas", "cartoes"];
+    manualFields.forEach((key) => {
+      document.getElementById(`avg-m-${key}`)?.addEventListener("input", (e) => {
+        avgState.manual[key] = Math.max(0, Number(e.target.value) || 0);
+        render();
+      });
+    });
+    document.getElementById("avg-proj")?.addEventListener("input", (e) => {
+      avgState.projJogos = Math.max(0, Number(e.target.value) || 0);
+      render();
+    });
+  }
+}
+
+/* ----------------------- boot ----------------------- */
+
+(async function init() {
+  await initAuth();
+  await loadAll();
+  render();
+})();
+</script>
+</body>
+</html>
